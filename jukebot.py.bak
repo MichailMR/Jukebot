@@ -1,8 +1,5 @@
 import asyncio
 
-import pytube
-from modules.get_stream import new_dl #now uses yt-dlp
-
 import discord
 from discord.ext import commands
 
@@ -25,38 +22,24 @@ class jukebox:
         
     async def play(self, play_url):
         ###playing stream
-        self.voice_client.play(discord.FFmpegPCMAudio(executable='C:/ffmpeg/bin/ffmpeg.exe', source=play_url, before_options='-err_detect ignore_err -re'))
+        self.voice_client.play(discord.FFmpegPCMAudio(executable='C:/ffmpeg/bin/ffmpeg.exe', source=play_url, before_options='-err_detect explode -re'))
         
     def is_playing(self):
         return not self.voice_client == None and self.voice_client.is_playing()
 
-class playlist:
+class mediator:
     def __init__(self, channel_id):
         ###data about the playlist
         self.id = channel_id
         
         ###class vars
-        self.playlist = []
         self.jukebox = {"box":None,"channel":None}
         
-    async def request(self, input, ctx, is_yt_url=True):
+    async def request(self, input, ctx):
             #actually don't want ctx in here, to much connection te class 1
-            
         await self.check_jukebox(ctx)
-            
-        ###Get youtube url
-        if is_yt_url:
-            yt_url = input
-            yt_title = new_dl.get_audio_stream(yt_url)["title"]
-        else:
-                #useless at this point
-            result = pytube.Search(input).results[0]
-            yt_url = result.watch_url
-            yt_title = result.title
-            
-        self.playlist += [{"yt_url":yt_url, "yt_title":yt_title}]
         
-        await ctx.send(f'Added {yt_title} to playlist')
+        await ctx.send(f'Now playing f{radio_name}')
         
         ###start playing if it is not playing
         if self.jukebox["box"].voice_client == None or not self.jukebox["box"].voice_client.is_playing():
@@ -69,26 +52,18 @@ class playlist:
         ###check if jukebox already playing
         if self.jukebox["box"].voice_client.is_playing():
            self.jukebox["box"].voice_client.stop() 
-    
-        ###convert youtube url to stream url
-        yt_url = self.playlist[0]["yt_url"]
-        play_url = new_dl.get_audio_stream(yt_url)["url"]
-        
-        print(play_url)
         
         ###sends play_url to jukebox
         await self.jukebox["box"].play(play_url)
-        self.playlist.pop(0)
         
-        ###awaits next song
+        ###awaits song end
         await self.song_end()
         
     async def song_end(self):
+            #Useless at this point
         while True:
             await asyncio.sleep(1)
             if not self.jukebox["box"].voice_client.is_playing():
-                if len(self.playlist) > 0:
-                    await self.next()
                 return
 
     async def check_jukebox(self, ctx):
@@ -104,7 +79,7 @@ class playlist:
 class client:
     def __init__(self):
         ###class vars
-        self.playlists = {"lists":[],"channels":[]}
+        self.mediators = {"mediators":[],"channels":[]}
         self.pending_options = {"types":[],"channels":[],"options":[],"ctx":[],"message":[]}
 
         ###bot stuff
@@ -146,8 +121,8 @@ class client:
                         elif payload.emoji.name == '5⃣':
                             url = self.pending_options["options"][pending_option_index][4]
                         
-                        playlists_index = self.check_playlist(payload.channel_id)
-                        await self.playlists["lists"][playlists_index].request(url, ctx, is_yt_url=True)  
+                        mediator_index = self.check_playlist(payload.channel_id)
+                        await self.mediators["mediators"][mediator_index].request(url, ctx, is_yt_url=True)  
 
         ###create commands
         ###test ping
@@ -159,18 +134,18 @@ class client:
         @self.bot.command(help = 'Plays next song')
         async def next(ctx):
             ###play next song
-            playlists_index = self.check_playlist(ctx.channel.id)
-            await self.playlists["lists"][playlists_index].next()
+            mediator_index = self.check_playlist(ctx.channel.id)
+            await self.mediators["mediators"][mediator_index].next()
         
         ###Pause or resume songs
         @self.bot.command(help = 'Pauses or resumes song')
         async def pause(ctx):
-            playlists_index = self.check_playlist(ctx.channel.id)
+            mediator_index = self.check_playlist(ctx.channel.id)
                 #transfer to class 2
-            if self.playlists["lists"][playlists_index].jukebox["box"].is_playing():
-                await self.playlists["lists"][playlists_index].pause_resume()
+            if self.mediators["mediators"][mediator_index].jukebox["box"].is_playing():
+                await self.mediators["mediators"][mediator_index].pause_resume()
             else:
-                await self.playlists["lists"][playlists_index].pause_resume()   
+                await self.mediators["mediators"][mediator_index].pause_resume()   
         
         ###request a song to be played
         @self.bot.command(help = 'Request a song to play')
@@ -185,7 +160,7 @@ class client:
             
             ###local vars
             input = " ".join(args)
-            playlists_index = self.check_playlist(ctx.channel.id)
+            mediator_index = self.check_playlist(ctx.channel.id)
             
             ###if search is a title
             if not (len(args) == 1 and 'http' in args[0]):
@@ -221,37 +196,32 @@ class client:
                 return
                 
             ###send request to class 2
-            await self.playlists["lists"][playlists_index].request(input, ctx, is_yt_url=True)
+            await self.mediators["mediators"][mediator_index].request(input, ctx, is_yt_url=True)
         
         ###get info on playlist
         @self.bot.command(help = 'Retrieves playlist data from text channel')
         async def playlist(ctx, *args):
                 #currently only id, but in future also next songs and N songs
         
-            playlists_index = self.check_playlist(ctx.channel.id)
-            playlist = self.playlists["lists"][playlists_index]
+            mediator_index = self.check_playlist(ctx.channel.id)
+            mediator = self.mediators["mediators"][mediator_index]
             
             output = ''
-            if ('next' in args or len(args) == 0) and len(playlist.playlist) > 0:
-                output += f'next: {playlist.playlist[-1]["yt_title"]}\n'
-                
-            if 'length' in args or len(args) == 0:
-                output += f'length: {len(playlist.playlist)}\n'
-                
+            
             if 'id' in args or len(args) == 0:
-                output += f'id: {playlist.id}\n'
+                output += f'id: {mediator.id}\n'
                 
             await ctx.send(output)
 
     def check_playlist(self, channel_id):
         ###Create playlist and retrieve id index
-        if not channel_id in self.playlists["channels"]:
-            self.playlists["channels"] += [channel_id]
-            self.playlists["lists"] += [playlist(channel_id)]
+        if not channel_id in self.mediators["channels"]:
+            self.mediators["channels"] += [channel_id]
+            self.mediators["mediators"] += [mediator(channel_id)]
         
-            #need to store self.playlists in json file for in-between-sesions storage
+            #need to store self.mediators in json file for in-between-sesions storage
         
-        return self.playlists["channels"].index(channel_id)
+        return self.mediators["channels"].index(channel_id)
     
     async def add_pending_options(self, options_object, message_id):
         if not id in self.pending_options["channels"]:
