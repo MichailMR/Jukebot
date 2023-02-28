@@ -1,0 +1,15 @@
+import yt_dlp
+
+class new_dl():
+    def get_audio_stream(url):
+        ydl_opts = {"format":'bestaudio'}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ###Get all information about the youtube video
+            info = ydl.extract_info(URL, download=False)
+            
+            ###Iterate through all of the available formats
+            for i,format in enumerate(info['formats']):
+                if format["audio_ext"] == 'none':
+                    continue
+                    
+                return format['url']

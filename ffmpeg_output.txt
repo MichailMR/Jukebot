@@ -1,0 +1,50 @@
+C:/ffmpeg/bin/ffmpeg.exe -re -i "https://rr3---sn-5hne6nzy.googlevideo.com/videoplayback?expire=1677275362&ei=gtz4Y9S-BNe2x_AP-L6bIA&ip=185.76.10.133&id=o-AEWBEWrG9Ot4E66kZEwvf1lZDACF-97dQbiR3Ki9XjEh&itag=599&source=youtube&requiressl=yes&mh=7c&mm=31%2C26&mn=sn-5hne6nzy%2Csn-25glenlr&ms=au%2Conr&mv=m&mvi=3&pl=24&initcwndbps=1066250&spc=H3gIhpChZ1S8bWt0He0QkW2Oi3WisOk&vprv=1&svpuc=1&mime=audio%2Fmp4&gir=yes&clen=817805&dur=212.183&lmt=1674227828689068&mt=1677253286&fvip=2&keepalive=yes&fexp=24007246&c=ANDROID&txp=4532434&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Cgir%2Cclen%2Cdur%2Clmt&sig=AOq0QJ8wRQIgL-i-6LrTnIEm0AKCRh8McItHsFmSBXttByltRzuHwPMCIQCa1kl5G6mynra5Nef-nTbzWZubPFo8TAiL_2jjgvYyaQ%3D%3D&lsparams=mh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Cinitcwndbps&lsig=AG3C_xAwRQIgILQhuYYMWgJnir2B4uXuaZNaT9U0aq-2Ep73vi4cfyQCIQDYXXy-qq9b3MW7PjzQm6PD3M_XTcKEfR-SFZwC8AtdQg%3D%3D" output.aac
+ffmpeg version N-105336-g7247a6fed8-20220122 Copyright (c) 2000-2022 the FFmpeg developers
+  built with gcc 11.2.0 (crosstool-NG 1.24.0.498_5075e1f)
+  configuration: --prefix=/ffbuild/prefix --pkg-config-flags=--static --pkg-config=pkg-config --cross-prefix=x86_64-w64-mingw32- --arch=x86_64 --target-os=mingw32 --enable-gpl --enable-version3 --disable-debug --enable-shared --disable-static --disable-w32threads --enable-pthreads --enable-iconv --enable-libxml2 --enable-zlib --enable-libfreetype --enable-libfribidi --enable-gmp --enable-lzma --enable-fontconfig --enable-libvorbis --enable-opencl --disable-libpulse --enable-libvmaf --disable-libxcb --disable-xlib --enable-amf --enable-libaom --enable-avisynth --enable-libdav1d --enable-libdavs2 --disable-libfdk-aac --enable-ffnvcodec --enable-cuda-llvm --enable-frei0r --enable-libgme --enable-libass --enable-libbluray --enable-libmp3lame --enable-libopus --enable-librist --enable-libtheora --enable-libvpx --enable-libwebp --enable-lv2 --enable-libmfx --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenh264 --enable-libopenjpeg --enable-libopenmpt --enable-librav1e --enable-librubberband --enable-schannel --enable-sdl2 --enable-libsoxr --enable-libsrt --enable-libsvtav1 --enable-libtwolame --enable-libuavs3d --disable-libdrm --disable-vaapi --enable-libvidstab --enable-vulkan --enable-libshaderc --enable-libplacebo --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxvid --enable-libzimg --enable-libzvbi --extra-cflags=-DLIBTWOLAME_STATIC --extra-cxxflags= --extra-ldflags=-pthread --extra-ldexeflags= --extra-libs=-lgomp --extra-version=20220122
+  libavutil      57. 18.100 / 57. 18.100
+  libavcodec     59. 20.100 / 59. 20.100
+  libavformat    59. 17.101 / 59. 17.101
+  libavdevice    59.  5.100 / 59.  5.100
+  libavfilter     8. 26.100 /  8. 26.100
+  libswscale      6.  5.100 /  6.  5.100
+  libswresample   4.  4.100 /  4.  4.100
+  libpostproc    56.  4.100 / 56.  4.100
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'https://rr3---sn-5hne6nzy.googlevideo.com/videoplayback?expire=1677275362&ei=gtz4Y9S-BNe2x_AP-L6bIA&ip=185.76.10.133&id=o-AEWBEWrG9Ot4E66kZEwvf1lZDACF-97dQbiR3Ki9XjEh&itag=599&source=youtube&requiressl=yes&mh=7c&mm=31%2C26&mn=sn-5hne6nzy%2Csn-25glenlr&ms=au%2Conr&mv=m&mvi=3&pl=24&initcwndbps=1066250&spc=H3gIhpChZ1S8bWt0He0QkW2Oi3WisOk&vprv=1&svpuc=1&mime=audio%2Fmp4&gir=yes&clen=817805&dur=212.183&lmt=1674227828689068&mt=1677253286&fvip=2&keepalive=yes&fexp=24007246&c=ANDROID&txp=4532434&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Cgir%2Cclen%2Cdur%2Clmt&sig=AOq0QJ8wRQIgL-i-6LrTnIEm0AKCRh8McItHsFmSBXttByltRzuHwPMCIQCa1kl5G6mynra5Nef-nTbzWZubPFo8TAiL_2jjgvYyaQ%3D%3D&lsparams=mh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Cinitcwndbps&lsig=AG3C_xAwRQIgILQhuYYMWgJnir2B4uXuaZNaT9U0aq-2Ep73vi4cfyQCIQDYXXy-qq9b3MW7PjzQm6PD3M_XTcKEfR-SFZwC8AtdQg%3D%3D':
+  Metadata:
+    major_brand     : dash
+    minor_version   : 0
+    compatible_brands: iso6mp41
+    creation_time   : 2023-01-20T15:08:49.000000Z
+  Duration: 00:03:32.18, start: 0.000000, bitrate: 30 kb/s
+  Stream #0:0[0x1](eng): Audio: aac (HE-AAC) (mp4a / 0x6134706D), 44100 Hz, stereo, fltp, 1 kb/s (default)
+    Metadata:
+      creation_time   : 2023-01-20T15:08:49.000000Z
+      handler_name    : ISO Media file produced by Google Inc.
+      vendor_id       : [0][0][0][0]
+Stream mapping:
+  Stream #0:0 -> #0:0 (aac (native) -> aac (native))
+Press [q] to stop, [?] for help
+Output #0, adts, to 'output.aac':
+  Metadata:
+    major_brand     : dash
+    minor_version   : 0
+    compatible_brands: iso6mp41
+    encoder         : Lavf59.17.101
+  Stream #0:0(eng): Audio: aac (LC), 44100 Hz, stereo, fltp, 128 kb/s (default)
+    Metadata:
+      creation_time   : 2023-01-20T15:08:49.000000Z
+      handler_name    : ISO Media file produced by Google Inc.
+      vendor_id       : [0][0][0][0]
+      encoder         : Lavc59.20.100 aac
+[tls @ 00000151d59f7840] Unable to read from sockets/s speed=   1x
+[mov,mp4,m4a,3gp,3g2,mj2 @ 00000151d59f7000] Packet corrupt (stream = 0, dts = 1294336).
+https://rr3---sn-5hne6nzy.googlevideo.com/videoplayback?expire=1677275362&ei=gtz4Y9S-BNe2x_AP-L6bIA&ip=185.76.10.133&id=o-AEWBEWrG9Ot4E66kZEwvf1lZDACF-97dQbiR3Ki9XjEh&itag=599&source=youtube&requiressl=yes&mh=7c&mm=31%2C26&mn=sn-5hne6nzy%2Csn-25glenlr&ms=au%2Conr&mv=m&mvi=3&pl=24&initcwndbps=1066250&spc=H3gIhpChZ1S8bWt0He0QkW2Oi3WisOk&vprv=1&svpuc=1&mime=audio%2Fmp4&gir=yes&clen=817805&dur=212.183&lmt=1674227828689068&mt=1677253286&fvip=2&keepalive=yes&fexp=24007246&c=ANDROID&txp=4532434&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Cgir%2Cclen%2Cdur%2Clmt&sig=AOq0QJ8wRQIgL-i-6LrTnIEm0AKCRh8McItHsFmSBXttByltRzuHwPMCIQCa1kl5G6mynra5Nef-nTbzWZubPFo8TAiL_2jjgvYyaQ%3D%3D&lsparams=mh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Cinitcwndbps&lsig=AG3C_xAwRQIgILQhuYYMWgJnir2B4uXuaZNaT9U0aq-2Ep73vi4cfyQCIQDYXXy-qq9b3MW7PjzQm6PD3M_XTcKEfR-SFZwC8AtdQg%3D%3D: corrupt input packet in stream 0
+[aac @ 00000151d7639c40] decode_band_types: Input buffer exhausted before END element found
+Error while decoding stream #0:0: Invalid data found when processing input
+[mov,mp4,m4a,3gp,3g2,mj2 @ 00000151d59f7000] stream 0, offset 0x1c05d: partial file
+https://rr3---sn-5hne6nzy.googlevideo.com/videoplayback?expire=1677275362&ei=gtz4Y9S-BNe2x_AP-L6bIA&ip=185.76.10.133&id=o-AEWBEWrG9Ot4E66kZEwvf1lZDACF-97dQbiR3Ki9XjEh&itag=599&source=youtube&requiressl=yes&mh=7c&mm=31%2C26&mn=sn-5hne6nzy%2Csn-25glenlr&ms=au%2Conr&mv=m&mvi=3&pl=24&initcwndbps=1066250&spc=H3gIhpChZ1S8bWt0He0QkW2Oi3WisOk&vprv=1&svpuc=1&mime=audio%2Fmp4&gir=yes&clen=817805&dur=212.183&lmt=1674227828689068&mt=1677253286&fvip=2&keepalive=yes&fexp=24007246&c=ANDROID&txp=4532434&sparams=expire%2Cei%2Cip%2Cid%2Citag%2Csource%2Crequiressl%2Cspc%2Cvprv%2Csvpuc%2Cmime%2Cgir%2Cclen%2Cdur%2Clmt&sig=AOq0QJ8wRQIgL-i-6LrTnIEm0AKCRh8McItHsFmSBXttByltRzuHwPMCIQCa1kl5G6mynra5Nef-nTbzWZubPFo8TAiL_2jjgvYyaQ%3D%3D&lsparams=mh%2Cmm%2Cmn%2Cms%2Cmv%2Cmvi%2Cpl%2Cinitcwndbps&lsig=AG3C_xAwRQIgILQhuYYMWgJnir2B4uXuaZNaT9U0aq-2Ep73vi4cfyQCIQDYXXy-qq9b3MW7PjzQm6PD3M_XTcKEfR-SFZwC8AtdQg%3D%3D: Unknown error
+size=     475kB time=00:00:29.35 bitrate= 132.4kbits/s speed=0.999x
+video:0kB audio:466kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 1.856203%
+[aac @ 00000151d763d1c0] Qavg: 617.748
+[tls @ 00000151d59f7840] Failed to send close message

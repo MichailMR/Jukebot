@@ -1,0 +1,254 @@
+import asyncio
+
+import pytube
+import pafy
+
+import discord
+from discord.ext import commands
+
+class jukebox:
+    def __init__(self, channel):
+        ###class vars
+        self.channel = channel
+        self.voice_client = None
+    
+    async def connect(self):
+        ###join voice channel
+        self.voice_client = await self.channel.connect()
+        
+    async def play(self, play_url):
+        ###playing stream
+        self.voice_client.play(discord.FFmpegPCMAudio(executable='C:/ffmpeg/bin/ffmpeg.exe', source=play_url))
+
+class playlist:
+        #need to delete jukebox_index
+    def __init__(self, channel_id):
+        ###data about the playlist
+        self.id = channel_id
+        
+        ###class vars
+        self.playlist = []
+        self.jukeboxes = {"box":None,"channel":None}
+        
+    async def request(self, input, ctx, is_yt_url=True):
+            #actually don't want ctx in here, to much connection te class 1
+            
+        await self.check_jukebox(ctx)
+            
+        ###Get youtube url
+        if is_yt_url:
+            yt_url = input
+            yt_title = pytube.YouTube(yt_url).title
+        else:
+            result = pytube.Search(input).results[0]
+            yt_url = result.watch_url
+            yt_title = result.title
+            
+        self.playlist += [{"yt_url":yt_url, "yt_title":yt_title}]
+        
+        await ctx.send(f'Added {yt_title} to playlist')
+        
+        ###start playing if it is not playing
+        if self.jukeboxes["box"].voice_client == None or not self.jukeboxes["box"].voice_client.is_playing():
+            await self.next()
+        
+    async def next(self):
+        ###check if jukebox already playing
+        if self.jukeboxes["box"].voice_client.is_playing():
+           self.jukeboxes["box"].voice_client.stop() 
+    
+        ###convert youtube url to stream url
+        video = pafy.new(self.playlist[-1]["yt_url"])
+        play_url = video.getbestaudio().url
+        
+        ###sends play_url to jukebox
+        await self.jukeboxes["box"].play(play_url)
+        self.playlist.pop()
+        
+        ###awaits next song
+        await self.song_end()
+        
+    async def song_end(self):
+        while True:
+            await asyncio.sleep(0.1)
+            if not self.jukeboxes["box"].voice_client.is_playing():
+                if len(self.playlist) > 0:
+                    await self.next()
+                return
+
+    async def check_jukebox(self, ctx):
+            #complete jank idk, doesnt connect when song ended and new song
+            
+        ###Create jukebox and retrieve id index
+        if not ctx.author.voice.channel.id == self.jukeboxes["channel"] or self.jukeboxes["box"].voice_client == None or not self.jukeboxes["box"].voice_client.is_connected():
+            self.jukeboxes["box"] = jukebox(ctx.author.voice.channel)
+            await self.jukeboxes["box"].connect()
+            self.jukeboxes["channel"] = ctx.author.voice.channel.id
+
+class client:
+    def __init__(self):
+        ###class vars
+        self.playlists = {"lists":[],"channels":[]}
+        self.pending_options = {"types":[],"channels":[],"options":[],"ctx":[]}
+
+        ###bot stuff
+        self.token = 'MTAzODUwNzIxNDMwODEzMDg0Nw.Gq6yK2.NmGmahw4biYN9stOR8KKq1Tyl0QrI3mS359gqQ'
+        self.bot = commands.Bot(command_prefix = '?', Intents=discord.Intents.all())
+        
+            #need to find event to register when bot is actually connected to vc
+        @self.bot.event
+        async def on_ready():
+            print('Rubiris is ready!')
+        
+        @self.bot.event
+        
+        
+        @self.bot.event
+        async def on_raw_reaction_add(payload):
+            if payload.channel_id in self.pending_options["channels"] and not payload.member.id == self.bot.user.id:
+                ###Options regardigng title to choose
+                pending_option_index = self.pending_options["channels"].index(payload.channel_id)
+                if self.pending_options["types"][pending_option_index] == 'title':
+                    ctx = self.pending_options["ctx"][pending_option_index]
+                    ###choosing a title
+                    if payload.emoji.name in ['1⃣','2⃣','3⃣','4⃣','5⃣']:
+                        if payload.emoji.name == '1⃣':
+                            title = self.pending_options["options"][pending_option_index][0]
+                        elif payload.emoji.name == '2⃣':
+                            title = self.pending_options["options"][pending_option_index][1]
+                        elif payload.emoji.name == '3⃣':
+                            title = self.pending_options["options"][pending_option_index][2]
+                        elif payload.emoji.name == '4⃣':
+                            title = self.pending_options["options"][pending_option_index][3]
+                        elif payload.emoji.name == '5⃣':
+                            title = self.pending_options["options"][pending_option_index][4]
+                        
+                        playlists_index = self.check_playlist(payload.channel_id)
+                        await self.playlists["lists"][playlists_index].request(title, ctx, is_yt_url=False)  
+                    else:
+                        ###deleting message
+                        if payload.emoji.name == '❌':
+                            await (await ctx.fetch_message(payload.message_id)).delete()
+                            
+                        #must send a yt_url instead of title, cuz goes wrong with shit
+
+        ###create commands
+        ###test ping
+        @self.bot.command(help = 'Returns message saying "pong"')
+        async def ping(ctx):
+            await ctx.send('pong')
+            
+        @self.bot.command(help = 'Returns message saying "pong"')
+        async def next(ctx):
+            ###play next song
+            playlists_index = self.check_playlist(ctx.channel.id)
+            await self.playlists["lists"][playlists_index].next()
+        
+        ###request a song to be played
+        @self.bot.command(help = 'Select a song to play')
+        async def request(ctx, *args):
+            if ctx.author == self.bot.user:
+                return
+            
+            ###check if author is connected to voice channel
+            if ctx.author.voice == None:
+                await ctx.send(f'You are not connected to a voice channel')
+                return
+            
+            ###local vars
+            input = " ".join(args)
+            playlists_index = self.check_playlist(ctx.channel.id)
+            
+            ###if search is a title
+            if not (len(args) == 1 and 'http' in args[0]):
+                ###creates list of titles
+                results = pytube.Search(input).results #most diffucult webscraper in the world ...
+                description = ''
+                n = 0
+                songs = []
+                for result in results:
+                    if n >= 5:
+                        break
+                    
+                    songs += [result.title]
+                    description += f'{str(n+1)}. {result.title}\n'
+                    n+=1
+                
+                ###ask question with embed and emoji reactions
+                embed = discord.Embed(title='Choose a title', description=description, color=0xaaaa00)
+                options_message = await ctx.send(embed=embed)
+                
+                await options_message.add_reaction('1⃣')
+                await options_message.add_reaction('2⃣')
+                await options_message.add_reaction('3⃣')
+                await options_message.add_reaction('4⃣')
+                await options_message.add_reaction('5⃣')
+                await options_message.add_reaction('❌')
+                
+                ###one per text channel retracable
+                self.pending_options["channels"] += [ctx.channel.id]
+                self.pending_options["types"] += ['title']
+                self.pending_options["options"] += [songs]
+                self.pending_options["ctx"] += [ctx]
+                return
+                
+            ###send request to class 2
+            await self.playlists["lists"][playlists_index].request(input, ctx, is_yt_url=True)
+        
+        ###get info on playlist
+        @self.bot.command(help = 'Retrieves playlist data from text channel')
+        async def playlist(ctx, *args):
+                #currently only id, but in future also next songs and N songs
+        
+            playlists_index = self.check_playlist(ctx.channel.id)
+            playlist = self.playlists["lists"][playlists_index]
+            
+            output = ''
+            if ('next' in args or len(args) == 0) and len(playlist.playlist) > 0:
+                output += f'next: {playlist.playlist[-1]["yt_title"]}\n'
+                
+            if 'length' in args or len(args) == 0:
+                output += f'length: {len(playlist.playlist)}\n'
+                
+            if 'id' in args or len(args) == 0:
+                output += f'id: {playlist.id}\n'
+                
+            await ctx.send(output)
+
+    def check_playlist(self, channel_id):
+        ###Create playlist and retrieve id index
+        if not channel_id in self.playlists["channels"]:
+            self.playlists["channels"] += [channel_id]
+            self.playlists["lists"] += [playlist(channel_id)]
+        
+            #need to store self.playlists in json file for in-between-sesions storage
+        
+        return self.playlists["channels"].index(channel_id)
+    
+    def run(self):
+        ###runs bot in discord
+        self.bot.run(self.token)
+        
+    async def close(self):
+        ###closes bot from discord
+        await self.bot.logout()
+
+###creates and runs a client
+client = client()
+client.run()
+
+"""
+    #need signal and sys libraries
+    #tried and failed to handle exit loop
+def handler(sig, frame):
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, handler)
+"""
+
+
+"""
+Playlist is connected to one text channel
+Playlist can create serveral jukeboxes wich al sing the some, current song
+Multiple jukeboxes can be connected to a voice channel
+"""
