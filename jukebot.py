@@ -1,4 +1,7 @@
 import asyncio
+import json
+
+token = json.load(open('key.json'))["key"]
 
 from modules.radio_soup import radio_soup
 
@@ -81,7 +84,6 @@ class client:
         self.pending_options = {"types":[],"channels":[],"options":[],"ctx":[],"message":[]}
 
         ###bot stuff
-        self.token = 'MTAzODUwNzIxNDMwODEzMDg0Nw.Gq6yK2.NmGmahw4biYN9stOR8KKq1Tyl0QrI3mS359gqQ'
         self.bot = commands.Bot(command_prefix = '?', Intents=discord.Intents.all())
         
             #need to find event to register when bot is actually connected to vc
@@ -248,9 +250,9 @@ class client:
         except:
             return True
     
-    def run(self):
+    def run(self, token):
         ###runs bot in discord
-        self.bot.run(self.token)
+        self.bot.run(token)
         
     async def close(self):
         ###closes bot from discord
@@ -259,7 +261,7 @@ class client:
 
 ###creates and runs a client
 client = client()
-client.run()
+client.run(token)
 
 """
 Playlist is connected to one text channel
