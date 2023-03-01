@@ -81,7 +81,8 @@ class client:
     def __init__(self):
         ###class vars
         self.mediators = {"mediators":[],"channels":[]}
-        self.pending_options = {"types":[],"channels":[],"options":[],"ctx":[],"message":[]}
+        self.pending_options = {"type":[],"channel":[],"options":[],"ctx":[],"message":[]}
+        self.reactions = ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣']
 
         ###bot stuff
         self.bot = commands.Bot(command_prefix = '?', Intents=discord.Intents.all())
@@ -94,35 +95,31 @@ class client:
         
         @self.bot.event
         async def on_raw_reaction_add(payload):
-            if payload.channel_id in self.pending_options["channels"] and not payload.member.id == self.bot.user.id:
+            if payload.channel_id == self.pending_options["channel"] and not payload.member.id == self.bot.user.id:
                     
                 ###Getting correct options
-                pending_option_index = self.pending_options["channels"].index(payload.channel_id)
                     #ctx is only used for self.playlist (want to remove)
-                ctx = self.pending_options["ctx"][pending_option_index]
+                ctx = self.pending_options["ctx"]
                 
                 ###deleting message
-                ###Works by getting the context of a pending_option in the same channel, this way it can find the message to destroy (it requires an earlier pending message in the same channel)
+                ###Works by getting the context of a pending_option in the same channel
+                    #earlier pending_options are to be destroyed when check_playlist
                 if payload.emoji.name == '❌':
-                    await self.pending_options["message"][pending_option_index].delete()
+                    await self.pending_options["message"].delete()
+                    return
                 
                 ###options that make user able to select title
-                if self.pending_options["types"][pending_option_index] == 'title':
+                if self.pending_options["type"] == 'radio':
                     ###choosing a title
-                    if payload.emoji.name in ['1⃣','2⃣','3⃣','4⃣','5⃣']:
-                        if payload.emoji.name == '1⃣':
-                            input = self.pending_options["options"][pending_option_index][0]
-                        elif payload.emoji.name == '2⃣':
-                            input = self.pending_options["options"][pending_option_index][1]
-                        elif payload.emoji.name == '3⃣':
-                            input = self.pending_options["options"][pending_option_index][2]
-                        elif payload.emoji.name == '4⃣':
-                            input = self.pending_options["options"][pending_option_index][3]
-                        elif payload.emoji.name == '5⃣':
-                            input = self.pending_options["options"][pending_option_index][4]
-                        
-                        mediator_index = self.check_playlist(payload.channel_id)
-                        await self.mediators["mediators"][mediator_index].request(input["url"], input["radio_name"], ctx)  
+                    reaction = payload.emoji.name
+                    
+                    option_index = self.reactions.index(reaction)
+                    input = self.pending_options["options"][option_index]
+                    
+                    ###requesting the radio
+                    mediator_index = self.check_playlist(payload.channel_id)
+                    await self.mediators["mediators"][mediator_index].request(input["url"], input["radio_name"], ctx) 
+                    return
 
         ###create commands
         ###test ping
@@ -138,10 +135,19 @@ class client:
             if self.mediators["mediators"][mediator_index].jukebox["box"].is_playing():
                 await self.mediators["mediators"][mediator_index].pause_resume()
             else:
-                await self.mediators["mediators"][mediator_index].pause_resume()   
+                await self.mediators["mediators"][mediator_index].pause_resume()
+
+        @self.bot.command(help = 'Pauses or resumes song')
+        async def resume(ctx):
+            mediator_index = self.check_playlist(ctx.channel.id)
+                #transfer to class 2
+            if self.mediators["mediators"][mediator_index].jukebox["box"].is_playing():
+                await self.mediators["mediators"][mediator_index].pause_resume()
+            else:
+                await self.mediators["mediators"][mediator_index].pause_resume()                 
         
         ###request a song to be played
-        @self.bot.command(help = 'Request a song to play')
+        @self.bot.command(help = 'Request a radio to listen to {Radio name/genre}')
         async def request(ctx, *args):
             if ctx.author == self.bot.user:
                 return
@@ -159,7 +165,7 @@ class client:
             if not (len(args) == 1 and 'http' in args[0]):
             
                 ###creates list of titles
-                is_mp3, results = radio_soup.get_stream(args[0])
+                results = radio_soup.get_stream(args[0])
                 
                 description = ''
                 n = 0
@@ -180,15 +186,12 @@ class client:
                 ###ask question with embed and emoji reactions
                 embed = discord.Embed(title='Choose a title', description=description, color=0xaa8800)
                 options_message = await ctx.send(embed=embed)
-                await self.add_pending_options({"channel":ctx.channel.id, "type":'title', "options":urls, "ctx":ctx, "message":options_message}, ctx.channel.id)
+                await self.add_pending_options({"channel":ctx.channel.id, "type":'radio', "options":urls, "ctx":ctx, "message":options_message},ctx.channel.id)
                 
                 ###add all reaction options
-                    #takes toooo long, creates bugs (needs to be less if less options)
-                await options_message.add_reaction('1⃣')
-                await options_message.add_reaction('2⃣')
-                await options_message.add_reaction('3⃣')
-                await options_message.add_reaction('4⃣')
-                await options_message.add_reaction('5⃣')
+                for i in range(len(urls)):
+                    await options_message.add_reaction(self.reactions[i])
+                    
                 await options_message.add_reaction('❌')
                 
                 return
@@ -196,59 +199,43 @@ class client:
             ###send request to class 2
             await self.mediators["mediators"][mediator_index].request(input, ctx)
         
-        ###get info on playlist
-        @self.bot.command(help = 'Retrieves playlist data from text channel')
-        async def playlist(ctx, *args):
-                #currently only id, but in future also next songs and N songs
+        @self.bot.command(help = 'Removes earlier option messages {number of messages to check}')
+        async def clean(ctx, *args):
+            limit = 100
         
-            mediator_index = self.check_playlist(ctx.channel.id)
-            mediator = self.mediators["mediators"][mediator_index]
+            if len(args) > 0 and type(args[0]) == int:
+                limit = args[0]
             
-            output = ''
-            
-            if 'id' in args or len(args) == 0:
-                output += f'id: {mediator.id}\n'
-                
-            await ctx.send(output)
+            async for message in ctx.channel.history(limit=limit):
+                reactions = []
+                for reaction in message.reactions:
+                    reactions += [reaction.emoji]
+                    
+                if len(reactions) > 0 and '❌' in reactions and '1⃣' in reactions:
+                    await message.delete()
 
     def check_playlist(self, channel_id):
+            #need to store self.mediators in json file for in-between-sesions storage
         ###Create playlist and retrieve id index
         if not channel_id in self.mediators["channels"]:
             self.mediators["channels"] += [channel_id]
             self.mediators["mediators"] += [mediator(channel_id)]
         
-            #need to store self.mediators in json file for in-between-sesions storage
-        
         return self.mediators["channels"].index(channel_id)
     
     async def add_pending_options(self, options_object, message_id):
-        if not id in self.pending_options["channels"]:
+        if not message_id == self.pending_options["channel"]:
             ###new options message
-            self.pending_options["channels"] += [options_object["channel"]]
-            self.pending_options["types"] += [options_object["type"]]
-            self.pending_options["options"] += [options_object["options"]]
-            self.pending_options["ctx"] += [options_object["ctx"]]
-            self.pending_options["message"] += [options_object["message"]]
-        else:
-            option_index = self.pending_options["channels"].index(message_id)
-            
+            self.pending_options = options_object
+        else:            
             ###delete previous options message
-            if not await is_message_deleted(options_object["ctx"], message_id):
-                await self.pending_options["message"][option_index].delete()
+            try:
+                await self.pending_options["message"].delete()
+            except:
+                pass
             
             ###add new options message
-            self.pending_options["channels"] = options_object["channel"]
-            self.pending_options["types"] = options_object["type"]
-            self.pending_options["options"] = options_object["options"]
-            self.pending_options["ctx"] = options_object["ctx"]
-            self.pending_options["message"] = options_object["message"]
-            
-    async def is_message_deleted(ctx, message_id):
-        try:
-            await ctx.fetch_message(message_id)
-            return False
-        except:
-            return True
+            self.pending_options = options_object
     
     def run(self, token):
         ###runs bot in discord
@@ -273,16 +260,13 @@ Multiple jukeboxes can be connected to a voice channel
 
 """
 Known bugs:
--Can't select too fast from pending options (when bot is still reacting with stickers), results in errors, can be solved by clicken the sticker again
--tells me all thing aren't iterables, idk, breaks completely
--sometimes the options message deletes itself, has to do with incomplete code where I tried to just have 1 options message at a time
--Music stops during the song (its not because of the song_end() fuction, it just stops o its own)
+-Can't select too fast from pending options (when bot is still reacting with stickers), results in errors, can be solved by clicking the sticker again
+-Every command needs to specify arguments
 """
 
 """
 To-be-added features:
--Shuffle
--Records
-
-use zip / dict / enumerate
+-Tuning (selecting random radio)
+-Using a exit sequence instead of plain ^C
+-(use zip / dict / enumerate)
 """
