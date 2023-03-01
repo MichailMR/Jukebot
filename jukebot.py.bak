@@ -1,5 +1,7 @@
 import asyncio
 
+from modules.radio_soup import radio_soup
+
 import discord
 from discord.ext import commands
 
@@ -35,20 +37,13 @@ class mediator:
         ###class vars
         self.jukebox = {"box":None,"channel":None}
         
-    async def request(self, input, ctx):
+    async def request(self, play_url, radio_name, ctx):
             #actually don't want ctx in here, to much connection te class 1
         await self.check_jukebox(ctx)
         
-        await ctx.send(f'Now playing f{radio_name}')
-        
-        ###start playing if it is not playing
-        if self.jukebox["box"].voice_client == None or not self.jukebox["box"].voice_client.is_playing():
-            await self.next()
-        
-    async def pause_resume(self):
-        await self.jukebox["box"].pause_resume()
-    
-    async def next(self):
+            #Needs to go to class 1
+        await ctx.send(f'Now playing {radio_name}')
+            
         ###check if jukebox already playing
         if self.jukebox["box"].voice_client.is_playing():
            self.jukebox["box"].voice_client.stop() 
@@ -58,6 +53,9 @@ class mediator:
         
         ###awaits song end
         await self.song_end()
+        
+    async def pause_resume(self):
+        await self.jukebox["box"].pause_resume()
         
     async def song_end(self):
             #Useless at this point
@@ -111,31 +109,24 @@ class client:
                     ###choosing a title
                     if payload.emoji.name in ['1⃣','2⃣','3⃣','4⃣','5⃣']:
                         if payload.emoji.name == '1⃣':
-                            url = self.pending_options["options"][pending_option_index][0]
+                            input = self.pending_options["options"][pending_option_index][0]
                         elif payload.emoji.name == '2⃣':
-                            url = self.pending_options["options"][pending_option_index][1]
+                            input = self.pending_options["options"][pending_option_index][1]
                         elif payload.emoji.name == '3⃣':
-                            url = self.pending_options["options"][pending_option_index][2]
+                            input = self.pending_options["options"][pending_option_index][2]
                         elif payload.emoji.name == '4⃣':
-                            url = self.pending_options["options"][pending_option_index][3]
+                            input = self.pending_options["options"][pending_option_index][3]
                         elif payload.emoji.name == '5⃣':
-                            url = self.pending_options["options"][pending_option_index][4]
+                            input = self.pending_options["options"][pending_option_index][4]
                         
                         mediator_index = self.check_playlist(payload.channel_id)
-                        await self.mediators["mediators"][mediator_index].request(url, ctx, is_yt_url=True)  
+                        await self.mediators["mediators"][mediator_index].request(input["url"], input["radio_name"], ctx)  
 
         ###create commands
         ###test ping
         @self.bot.command(help = 'Returns message saying "pong"')
         async def ping(ctx):
             await ctx.send('pong')
-            
-        ###next song
-        @self.bot.command(help = 'Plays next song')
-        async def next(ctx):
-            ###play next song
-            mediator_index = self.check_playlist(ctx.channel.id)
-            await self.mediators["mediators"][mediator_index].next()
         
         ###Pause or resume songs
         @self.bot.command(help = 'Pauses or resumes song')
@@ -164,28 +155,33 @@ class client:
             
             ###if search is a title
             if not (len(args) == 1 and 'http' in args[0]):
-                    #seems to do 2 pytube searches
             
                 ###creates list of titles
-                results = pytube.Search(input).results #most diffucult webscraper in the world ...
+                is_mp3, results = radio_soup.get_stream(args[0])
+                
                 description = ''
                 n = 0
-                song_urls = []
+                urls = []
+                
                 for result in results:
                     if n >= 5:
                         break
+                        
+                    ###Get nice radio name to show
+                    file_type = result.split('.')[-1]
+                    radio_name = result.split('/')[-1].split('.')[-2].split('_')[0]
                     
-                    song_urls += [result.watch_url]
-                    description += f'{str(n+1)}. {result.title}\n'
+                    urls += [{"url":result, "radio_name":radio_name}]
+                    description += f'{str(n+1)}. {radio_name} - {file_type}\n'
                     n+=1
                 
                 ###ask question with embed and emoji reactions
                 embed = discord.Embed(title='Choose a title', description=description, color=0xaa8800)
                 options_message = await ctx.send(embed=embed)
-                await self.add_pending_options({"channel":ctx.channel.id, "type":'title', "options":song_urls, "ctx":ctx, "message":options_message}, ctx.channel.id)
+                await self.add_pending_options({"channel":ctx.channel.id, "type":'title', "options":urls, "ctx":ctx, "message":options_message}, ctx.channel.id)
                 
                 ###add all reaction options
-                    #takes toooo long, creates bugs
+                    #takes toooo long, creates bugs (needs to be less if less options)
                 await options_message.add_reaction('1⃣')
                 await options_message.add_reaction('2⃣')
                 await options_message.add_reaction('3⃣')
@@ -196,7 +192,7 @@ class client:
                 return
                 
             ###send request to class 2
-            await self.mediators["mediators"][mediator_index].request(input, ctx, is_yt_url=True)
+            await self.mediators["mediators"][mediator_index].request(input, ctx)
         
         ###get info on playlist
         @self.bot.command(help = 'Retrieves playlist data from text channel')

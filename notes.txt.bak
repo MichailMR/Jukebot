@@ -27,7 +27,20 @@ class 2 heeft maar 1 class 3, want de bot kan maar in 1 channel tegelijk gejoine
 16/02/2023 (2 uur)
 Het /\ hiervoor leek allemaal te werken totdat het niet meer werkte omdat blijkbaar:
 
-17/02/2023 (1 uur)
+17/02/2023 (2 uur)
 het blijkt dat youtube intern dingen heeft aangepast waardoor de meta data niet meer verkrijgbaar was via youtube_dl, maar wel via yt_dlp.
 Ik heb hiervoor een nieuwe .py bestand met apparte class aangemaakt zodat het makkelijk vervangbaar is.
 Nu stopt de muziek halverwege.
+
+23/02/2023 (1 uur)
+Ik heb achterhaald dat de audiostreams van yt_dlp niet compitabel zijn en tijdens het ophalen voor een deel verdwijnen,
+waardoor je maar een klien stukkie van elk lied te horen krijgt.
+
+28/02/2023 (2 uur)
+Ik heb geprobeerd uit andere muziek libraries streams te halen, maar dit is mislukt.
+Dus heb ik besloten het roer een beetje om te gooien en audio streams van alleen web radio te gebruiken.
+Gebruikers kunnen dan nog steeds het radio kanaal kiezen.
+Ik heb met behulp van een site en de html scraper beautifull soup een module geschreven die radio streams vind bij een zoekterm.
+
+01/03/2023 (1 uur)
+Ik heb nu de code /\ toegepast in de bot
