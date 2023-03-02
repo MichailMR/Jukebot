@@ -11,7 +11,6 @@ class radio_soup:
         name_mentions = soup.find_all(string=re.compile(input, re.IGNORECASE))
         
         urls = []
-        is_mp3 = False
         
         ###filters mentions into usable urls
         for name_mention in name_mentions:        
@@ -25,14 +24,11 @@ class radio_soup:
             parent = name_mention.parent
             
             ###if is a then it already is an url
-            if parent.name == 'a':
+            if parent.name == 'a' and not parent.get('href') == None:
                 url = parent.get('href')
             
-            ###.mp3's are usefull, aac's maybe not (not in a web browser)
-            if '.mp3' in url:
-                urls.insert(0, url)
-                is_mp3 = True
-            elif '.aac' in url:
+            ###only add if it is a known audio file
+            if '.mp3' in url or '.aac' in url or '.m3u8' in url or '.pls' in url or '.asx' in url:
                 urls += [url]
             
-        return is_mp3, urls
+        return urls
