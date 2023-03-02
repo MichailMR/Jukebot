@@ -28,7 +28,7 @@ class radio_soup:
                 url = parent.get('href')
             
             ###only add if it is a known audio file
-            if '.mp3' in url or '.aac' in url or '.m3u8' in url or '.pls' in url or '.asx' in url:
+            if '.mp3' in url or '.aac' in url or '.m3u8' in url:
                 urls += [url]
             
         return urls
