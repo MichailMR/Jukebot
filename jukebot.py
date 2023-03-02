@@ -148,7 +148,7 @@ class client:
         
         ###request a song to be played
         @self.bot.command(help = 'Request a radio to listen to {Radio name/genre}')
-        async def request(ctx, *args):
+        async def search(ctx, *args):
             if ctx.author == self.bot.user:
                 return
             
@@ -198,6 +198,17 @@ class client:
                 
             ###send request to class 2
             await self.mediators["mediators"][mediator_index].request(input, ctx)
+        
+        @self.bot.command(help = 'Searches random radio')
+        async def tuner(ctx, *args):
+            radio_urls = radio_soup.get_stream(args[0])
+            radio_url = random.choice(radio_urls)
+            
+            radio_name = radio_url.split('/')[-1].split('.')[-2].split('_')[0]
+            
+            ###requesting the radio
+            mediator_index = self.check_playlist(payload.channel_id)
+            await self.mediators["mediators"][mediator_index].request(radio_url, radio_name, ctx) 
         
         @self.bot.command(help = 'Removes earlier option messages {number of messages to check}')
         async def clean(ctx, *args):
