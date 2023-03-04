@@ -92,7 +92,7 @@ class client:
         self.pending_options = {"types":[],"channels":[],"options":[],"ctx":[]}
 
         ###bot stuff
-        self.token = 'MTAzODUwNzIxNDMwODEzMDg0Nw.Gq6yK2.NmGmahw4biYN9stOR8KKq1Tyl0QrI3mS359gqQ'
+        self.token = 'your discord token'
         self.bot = commands.Bot(command_prefix = '?', Intents=discord.Intents.all())
         
             #need to find event to register when bot is actually connected to vc

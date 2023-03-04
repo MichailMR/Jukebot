@@ -42,5 +42,8 @@ Dus heb ik besloten het roer een beetje om te gooien en audio streams van alleen
 Gebruikers kunnen dan nog steeds het radio kanaal kiezen.
 Ik heb met behulp van een site en de html scraper beautifull soup een module geschreven die radio streams vind bij een zoekterm.
 
-01/03/2023 (1 uur)
+01/03/2023 (2 uur)
 Ik heb nu de code /\ toegepast in de bot.
+En het keuze menu verbeterd en versoepeld.
+
+04/03/2023 (2 uur)

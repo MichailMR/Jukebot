@@ -11,24 +11,20 @@ class radio_soup:
         name_mentions = soup.find_all(string=re.compile(input, re.IGNORECASE))
         
         urls = []
+        radio_names = []
         
         ###filters mentions into usable urls
         for name_mention in name_mentions:        
-            string = name_mention.strip()
-            url = ''
-            
-            ###Check if the mention itself is the url
-            if 'http' in string:
-                url = string
-            
-            parent = name_mention.parent
-            
-            ###if is a then it already is an url
+            string, parent = name_mention.strip(), name_mention.parent
+            url, radio_name = '', ''
+                
+            ###Check if parent has url
             if parent.name == 'a' and not parent.get('href') == None:
-                url = parent.get('href')
-            
-            ###only add if it is a known audio file
+                url, radio_name = parent.get('href'), parent.get_text().strip()
+        
+            ###only add if it is an usefull audio file stream
             if '.mp3' in url or '.aac' in url or '.m3u8' in url:
                 urls += [url]
+                radio_names += [radio_name]
             
-        return urls
+        return dict(zip(["urls", "radio_names"], [urls, radio_names]))

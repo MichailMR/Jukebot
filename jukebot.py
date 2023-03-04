@@ -56,16 +56,29 @@ class mediator:
         await self.jukebox["box"].play(play_url)
         
         ###awaits song end
-        await self.song_end()
+        await self.song_end(ctx)
+        
+    async def tuner(self, ctx):
+            #remove ctx pls
+        ###Get all radio streams
+        results = radio_soup.get_stream('')
+        
+        ###Select a random radio stream
+        n = int(random.random()*len(results["urls"]))
+        radio_url, radio_name = results["urls"][n], results["radio_names"][n]
+        
+        ###requesting the radio stream
+        await self.request(radio_url, radio_name, ctx)
         
     async def pause_resume(self):
         await self.jukebox["box"].pause_resume()
         
-    async def song_end(self):
-            #Useless at this point
+    async def song_end(self, ctx):
+            #remove ctx, pls
         while True:
             await asyncio.sleep(1)
             if not self.jukebox["box"].voice_client.is_playing():
+                await self.tuner(ctx)
                 return
 
     async def check_jukebox(self, ctx):
@@ -155,61 +168,53 @@ class client:
             
             ###check if author is connected to voice channel
             if ctx.author.voice == None:
-                await ctx.send(f'You are not connected to a voice channel')
+                await ctx.send('You are not connected to a voice channel')
+                return
+                
+            if len(args) == 0:
+                await ctx.send('Tuning to new radio')
+                mediator_index = self.check_playlist(ctx.channel.id)
+                await self.mediators["mediators"][mediator_index].tuner(ctx)
                 return
             
             ###local vars
-            input = " ".join(args)
-            mediator_index = self.check_playlist(ctx.channel.id)
+            input = ' '.join(args)            
+            results = radio_soup.get_stream(input)
             
-            ###if search is a title
-            if not (len(args) == 1 and 'http' in args[0]):
-            
-                ###creates list of titles
-                results = radio_soup.get_stream(args[0])
-                
-                description = ''
-                n = 0
-                urls = []
-                
-                for result in results:
-                    if n >= 5:
-                        break
-                        
-                    ###Get nice radio name to show
-                    file_type = result.split('.')[-1]
-                    radio_name = result.split('/')[-1].split('.')[-2].split('_')[0]
-                    
-                    urls += [{"url":result, "radio_name":radio_name}]
-                    description += f'{str(n+1)}. {radio_name} - .{file_type}\n'
-                    n+=1
-                
-                ###ask question with embed and emoji reactions
-                embed = discord.Embed(title='Choose a title', description=description, color=0xaa8800)
-                options_message = await ctx.send(embed=embed)
-                await self.add_pending_options({"channel":ctx.channel.id, "type":'radio', "options":urls, "ctx":ctx, "message":options_message},ctx.channel.id)
-                
-                ###add all reaction options
-                for i in range(len(urls)):
-                    await options_message.add_reaction(self.reactions[i])
-                    
-                await options_message.add_reaction('❌')
-                
+            if len(results["urls"]) == 0:
+                await ctx.send('No search results')
                 return
-                
-            ###send request to class 2
-            await self.mediators["mediators"][mediator_index].request(input, ctx)
+            
+            mediator_index, description, urls = self.check_playlist(ctx.channel.id), '', []
+            
+            ###Select five results to add to options [optimised with zip]
+            for url, radio_name, i in zip(results["urls"], results["radio_names"], range(5)):
+                urls += [{"url":url, "radio_name":radio_name}]
+                description += f'{str(i+1)}. {radio_name}\n'
+            
+            ###ask question with embed and emoji reactions
+                #gives error when no result, idk
+            options_message = await ctx.send(embed=discord.Embed(description=description, color=0xaa8800))
+            
+            await self.add_pending_options({"channel":ctx.channel.id, "type":'radio', "options":urls, "ctx":ctx, "message":options_message},ctx.channel.id)
+            
+            ###add all reaction options
+            for i in range(len(urls)):
+                await options_message.add_reaction(self.reactions[i])
+            await options_message.add_reaction('📻')            
+            await options_message.add_reaction('❌')
         
         @self.bot.command(help = 'Searches random radio')
         async def tuner(ctx, *args):
-            radio_urls = radio_soup.get_stream('')
-            radio_url = random.choice(radio_urls)
-            
-            radio_name = radio_url.split('/')[-1].split('.')[-2].split('_')[0]
-            
-            ###requesting the radio
             mediator_index = self.check_playlist(ctx.channel.id)
-            await self.mediators["mediators"][mediator_index].request(radio_url, radio_name, ctx) 
+            await self.mediators["mediators"][mediator_index].tuner(ctx)
+            
+        @self.bot.command(help = 'Plays audio stream from url')
+        async def fromurl(ctx, *args):
+            if len(args) > 0:
+                input = ' '.join(args)
+                mediator_index = self.check_playlist(ctx.channel.id)
+                await self.mediators["mediators"][mediator_index].request(input, 'user input', ctx)
         
         @self.bot.command(help = 'Removes earlier option messages {number of messages to check}')
         async def clean(ctx, *args):
@@ -254,31 +259,20 @@ class client:
         self.bot.run(token)
         
     async def close(self):
-        ###closes bot from discord
-        await self.bot.logout()
-            #not used at the moment
+        ###logs bot out from discord
+        await self.bot.close()
 
 ###creates and runs a client
 client = client()
 client.run(token)
 
 """
-Playlist is connected to one text channel
-Playlist can create a jukebox which plays the current song from the playlist
-Records (playlists) can be stored in an extern JSON file (not yet)
-Multiple jukeboxes can be connected to a voice channel
-"""
-
-
-"""
 Known bugs:
--Can't select too fast from pending options (when bot is still reacting with stickers), results in errors, can be solved by clicking the sticker again
--Every command needs to specify arguments
+-Every command needs to specify numbe of arguments
 """
 
 """
 To-be-added features:
--When a radio stops, search new zender
--Using a exit sequence instead of plain ^C
--(use zip / dict / enumerate)
+-Like and dislikes when tuning
+-Add radio widget (to easily tune next item) (with new reaction option to open radio)
 """

@@ -46,7 +46,7 @@ class client:
         self.playlists = {"lists":[],"channels":[]}
 
         ###bot stuff
-        self.token = 'MTAzODUwNzIxNDMwODEzMDg0Nw.Gq6yK2.NmGmahw4biYN9stOR8KKq1Tyl0QrI3mS359gqQ'
+        self.token = 'your discord token'
         self.bot = commands.Bot(command_prefix = '?', Intents=discord.Intents.all())
         
         @self.bot.event
