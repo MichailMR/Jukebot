@@ -82,8 +82,6 @@ class mediator:
                 return
 
     async def check_jukebox(self, ctx):
-            #complete jank idk, doesnt connect when song ended and new song
-            
         ###Create jukebox and retrieve id index
         if not ctx.author.voice.channel.id == self.jukebox["channel"] or self.jukebox["box"].voice_client == None or not self.jukebox["box"].voice_client.is_connected():
             self.jukebox["box"] = jukebox(ctx.author.voice.channel)

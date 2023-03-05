@@ -209,7 +209,7 @@ class client:
             mediator_index = self.check_playlist(ctx.channel.id)
             await self.mediators["mediators"][mediator_index].tuner(ctx)
             
-         @self.bot.command(help = 'Plays audio stream from url')
+        @self.bot.command(help = 'Plays audio stream from url')
         async def fromurl(ctx, *args):
             if len(args) > 0:
                 input = ' '.join(args)
