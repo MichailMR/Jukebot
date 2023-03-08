@@ -50,3 +50,8 @@ En het keuze menu verbeterd en versoepeld.
 04/03/2023 (2 uur)
 Ik heb de code wat ingekort door zip() te gebruiken waar dat kon.
 Ik heb meer radio zenders toegevoegd en het scrapen van de namen van de radio zenders verbeterd.
+
+08/03/2023 (1 uur)
+Ik heb de radio command toegevoegd die een makkelijker te gebruiken widget toeveogd waar je met een klik op een emoji kan
+"liken", "disliken", zoeken, pauzeren/hervatten of "tunen".
+Het vinden van de naam van een radio is verbeterd.
