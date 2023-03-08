@@ -39,7 +39,7 @@ class mediator:
         self.id = channel_id
         
         ###class vars
-        self.jukebox = {"box":None,"channel":None}
+        self.jukebox = {"box":None, "channel":None, "radio_name":None}
         
     async def request(self, play_url, radio_name, ctx):
             #actually don't want ctx in here, to much connection te class 1
@@ -47,6 +47,8 @@ class mediator:
         
             #Needs to go to class 1
         await ctx.send(f'Now playing {radio_name}')
+        
+        self.jubebox["radio_name"] = radio_name
             
         ###check if jukebox already playing
         if self.jukebox["box"].voice_client.is_playing():
@@ -66,6 +68,7 @@ class mediator:
         ###Select a random radio stream
         n = int(random.random()*len(results["urls"]))
         radio_url, radio_name = results["urls"][n], results["radio_names"][n]
+        self.jukebox["radio_name"] = radio_name
         
         ###requesting the radio stream
         await self.request(radio_url, radio_name, ctx)
@@ -94,7 +97,6 @@ class client:
         ###class vars
         self.mediators = {"mediators":[],"channels":[]}
         self.pending_options = {"type":[],"channel":[],"options":[],"ctx":[],"message":[]}
-        self.reactions = ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣']
 
         ###bot stuff
         self.bot = commands.Bot(command_prefix = '?', Intents=discord.Intents.all())
@@ -113,24 +115,42 @@ class client:
                     #ctx is only used for self.playlist (want to remove)
                 ctx = self.pending_options["ctx"]
                 
-                ###deleting message
-                ###Works by getting the context of a pending_option in the same channel
-                    #earlier pending_options are to be destroyed when check_playlist
-                if payload.emoji.name == '❌':
-                    await self.pending_options["message"].delete()
-                    return
-                
                 ###options that make user able to select title
-                if self.pending_options["type"] == 'radio':
+                if self.pending_options["type"] == 'search':
                     ###choosing a title
                     reaction = payload.emoji.name
                     
-                    option_index = self.reactions.index(reaction)
+                    reactions = ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣', '📻']
+                    
+                    if reaction == '📻':
+                        await ctx.invoke(self.bot.get_command('r'))
+                        return
+                    
+                    option_index = reactions.index(reaction)
                     input = self.pending_options["options"][option_index]
                     
                     ###requesting the radio
                     mediator_index = self.check_playlist(payload.channel_id)
                     await self.mediators["mediators"][mediator_index].request(input["url"], input["radio_name"], ctx) 
+                    return
+                    
+                if self.pending_options["type"] == 'radio':
+                    ###choosing a title
+                    reaction = payload.emoji.name
+                    
+                    #['👍', '📻', '🔎', '👎', '❌']
+                    
+                    if reaction == '👍':
+                        pass
+                    elif reaction == '📻':
+                        pass
+                    elif reaction == '🔎':
+                        await ctx.invoke(self.bot.get_command('search'))
+                    elif reaction == '👎':
+                        pass
+                    elif reaction == '❌':
+                            #Needs to disconnect jubebox and mediator
+                        await self.pending_options["message"].delete()
                     return
 
         ###create commands
@@ -158,8 +178,34 @@ class client:
             else:
                 await self.mediators["mediators"][mediator_index].pause_resume()                 
         
+        ###Open radio widget (inbed with reaction options)
+        @self.bot.command(help = 'Opens the radio widget (📻)')
+        async def r(ctx):
+            ###Get mediator
+            channel_id = ctx.channel.id
+            mediator = self.mediators["mediators"][self.check_playlist(channel_id)]
+            
+            ###Neat description
+            radio_name = mediator.jubebox["radio_name"]
+            if radio_name == None:
+                description = 'Now playing nothing'
+            else:
+                description = f'Now playing: {radio_name}'
+            
+            options_message = await ctx.send(embed=discord.Embed(description=description, color=0xaa8800))
+            options = [None]*5
+            
+            ###add options
+            await self.add_pending_options({"channel":ctx.channel.id, "type":'radio', "options":options, "ctx":ctx, "message":options_message}, ctx.channel.id)
+            
+            ###add all reaction options
+            reactions = ['👍', '📻', '🔎', '👎', '❌']
+            for reaction in reactions:
+                await options_message.add_reaction(reaction)
+            
+        
         ###request a song to be played
-        @self.bot.command(help = 'Request a radio to listen to {Radio name/genre}')
+        @self.bot.command(help = 'Request a radio to listen to (🔎) [radio name/genre]')
         async def search(ctx, *args):
             if ctx.author == self.bot.user:
                 return
@@ -168,15 +214,26 @@ class client:
             if ctx.author.voice == None:
                 await ctx.send('You are not connected to a voice channel')
                 return
-                
-            if len(args) == 0:
-                await ctx.send('Tuning to new radio')
-                mediator_index = self.check_playlist(ctx.channel.id)
-                await self.mediators["mediators"][mediator_index].tuner(ctx)
+            
+            channel_id = ctx.channel.id
+            mediator = self.mediators["mediators"][self.check_playlist(channel_id)]
+            
+                #WIP
+            if not mediator.jukebox["box"] == None and mediator.jukebox["box"].is_playing() and not channel_id in self.mediators["channels"]:
+                await ctx.send('Please write commands in the correct text channel')
                 return
             
-            ###local vars
-            input = ' '.join(args)            
+            #If there isn't a search query ask for it
+            if len(args) == 0:
+                await ctx.send('What do you want to hear?')
+                
+                def is_channel(m):
+                    return m.channel.id == channel_id
+                input = (await self.bot.wait_for("message", check=is_channel)).content
+            else:
+                input = ' '.join(args) 
+            
+            #Find radio urls using radio_soup
             results = radio_soup.get_stream(input)
             
             if len(results["urls"]) == 0:
@@ -191,24 +248,24 @@ class client:
                 description += f'{str(i+1)}. {radio_name}\n'
             
             ###ask question with embed and emoji reactions
-                #gives error when no result, idk
             options_message = await ctx.send(embed=discord.Embed(description=description, color=0xaa8800))
             
-            await self.add_pending_options({"channel":ctx.channel.id, "type":'radio', "options":urls, "ctx":ctx, "message":options_message},ctx.channel.id)
+            await self.add_pending_options({"channel":ctx.channel.id, "type":'search', "options":urls, "ctx":ctx, "message":options_message},ctx.channel.id)
             
             ###add all reaction options
+            reactions = ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣', '📻']
+            
             for i in range(len(urls)):
-                await options_message.add_reaction(self.reactions[i])
-            await options_message.add_reaction('📻')            
-            await options_message.add_reaction('❌')
+                await options_message.add_reaction(reactions[i])
+            await options_message.add_reaction(reactions[-1])
         
         @self.bot.command(help = 'Searches random radio')
         async def tuner(ctx, *args):
             mediator_index = self.check_playlist(ctx.channel.id)
             await self.mediators["mediators"][mediator_index].tuner(ctx)
             
-        @self.bot.command(help = 'Plays audio stream from url')
-        async def fromurl(ctx, *args):
+        @self.bot.command(help = 'Plays audio stream from url [url]')
+        async def streamurl(ctx, *args):
             if len(args) > 0:
                 input = ' '.join(args)
                 mediator_index = self.check_playlist(ctx.channel.id)
@@ -226,7 +283,7 @@ class client:
                 for reaction in message.reactions:
                     reactions += [reaction.emoji]
                     
-                if len(reactions) > 0 and '❌' in reactions and '1⃣' in reactions:
+                if len(reactions) > 0 and '📻' in reactions:
                     await message.delete()
 
     def check_playlist(self, channel_id):
@@ -266,11 +323,12 @@ client.run(token)
 
 """
 Known bugs:
--Every command needs to specify numbe of arguments
 """
 
 """
 To-be-added features:
+-Every command needs to specify number of arguments
 -Like and dislikes when tuning
 -Add radio widget (to easily tune next item) (with new reaction option to open radio)
+-Add disconnect
 """

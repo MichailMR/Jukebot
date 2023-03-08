@@ -20,11 +20,16 @@ class radio_soup:
                 
             ###Check if parent has url
             if parent.name == 'a' and not parent.get('href') == None:
-                url, radio_name = parent.get('href'), ' '.join(parent.get_text().strip().split()[1:])
+                url, radio_name = parent.get('href'), parent.get_text().strip()
+                
+            elif 'http' in name_mention:
+                print(name_mention.parent.parent.parent.find('a').get_text())
+                url, radio_name = name_mention.strip(), name_mention.parent.parent.parent.find('a').get_text()
         
             ###only add if it is an usefull audio file stream
             if '.mp3' in url or '.aac' in url or '.m3u8' in url:
                 urls += [url]
+                string = 'â€”'
                 radio_names += [radio_name]
             
         return dict(zip(["urls", "radio_names"], [urls, radio_names]))
