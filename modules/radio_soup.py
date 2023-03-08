@@ -23,7 +23,19 @@ class radio_soup:
                 url, radio_name = parent.get('href'), parent.get_text().strip()
                 
             elif 'http' in name_mention:
-                url, radio_name = name_mention.strip(), name_mention.parent.parent.parent.find('a').get_text()
+                url, radio_name = name_mention.strip(), ''
+                print(url)
+                
+                ###Find good name
+                for segment in name_mention.strip().split('/'):
+                    if input.upper() in segment.upper():
+                        radio_name = segment.lower().split('.')[0]
+            
+            ###Remove ugly string fragments
+            for segment in radio_name.split(' '):
+                if segment == 'â€”':
+                    radio_name = ' '.join(radio_name.split(' ')[1:])
+            radio_name = radio_name.replace('\n', '')
         
             ###only add if it is an usefull audio file stream
             if '.mp3' in url or '.aac' in url or '.m3u8' in url:

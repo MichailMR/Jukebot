@@ -45,10 +45,7 @@ class mediator:
             #actually don't want ctx in here, to much connection te class 1
         await self.check_jukebox(ctx)
         
-            #Needs to go to class 1
-        await ctx.send(f'Now playing {radio_name}')
-        
-        self.jubebox["radio_name"] = radio_name
+        self.jukebox["radio_name"] = radio_name
             
         ###check if jukebox already playing
         if self.jukebox["box"].voice_client.is_playing():
@@ -56,9 +53,6 @@ class mediator:
         
         ###sends play_url to jukebox
         await self.jukebox["box"].play(play_url)
-        
-        ###awaits song end
-        await self.song_end(ctx)
         
     async def tuner(self, ctx):
             #remove ctx pls
@@ -75,16 +69,9 @@ class mediator:
         
     async def pause_resume(self):
         await self.jukebox["box"].pause_resume()
-        
-    async def song_end(self, ctx):
-            #remove ctx, pls
-        while True:
-            await asyncio.sleep(1)
-            if not self.jukebox["box"].voice_client.is_playing():
-                await self.tuner(ctx)
-                return
 
     async def check_jukebox(self, ctx):
+            #Source of the ctx problem
         ###Create jukebox and retrieve id index
         if not ctx.author.voice.channel.id == self.jukebox["channel"] or self.jukebox["box"].voice_client == None or not self.jukebox["box"].voice_client.is_connected():
             self.jukebox["box"] = jukebox(ctx.author.voice.channel)
@@ -138,18 +125,20 @@ class client:
                     ###choosing a title
                     reaction = payload.emoji.name
                     
-                    #['👍', '📻', '🔎', '👎', '❌']
+                    #['👍', '📻', '⏯️', '🔎', '👎', '❌']
                     
                     if reaction == '👍':
                         pass
-                    elif reaction == '📻':
-                        pass
+                    elif reaction == '📡':
+                        await ctx.invoke(self.bot.get_command('tuner'))
+                    elif reaction == '⏯️':
+                        await ctx.invoke(self.bot.get_command('pause'))
                     elif reaction == '🔎':
                         await ctx.invoke(self.bot.get_command('search'))
                     elif reaction == '👎':
                         pass
                     elif reaction == '❌':
-                            #Needs to disconnect jubebox and mediator
+                            #Needs to disconnect jukebox and mediator
                         await self.pending_options["message"].delete()
                     return
 
@@ -181,11 +170,13 @@ class client:
         ###Open radio widget (inbed with reaction options)
         @self.bot.command(help = 'Opens the radio widget (📻)')
         async def r(ctx):
+            ###Get mediator
             channel_id = ctx.channel.id
             mediator = self.mediators["mediators"][self.check_playlist(channel_id)]
             
             ###Neat description
-            radio_name = mediator.jubebox["radio_name"]
+                #Needs to be updated when a new song plays
+            radio_name = mediator.jukebox["radio_name"]
             if radio_name == None:
                 description = 'Now playing nothing'
             else:
@@ -198,7 +189,7 @@ class client:
             await self.add_pending_options({"channel":ctx.channel.id, "type":'radio', "options":options, "ctx":ctx, "message":options_message}, ctx.channel.id)
             
             ###add all reaction options
-            reactions = ['👍', '📻', '🔎', '👎', '❌']
+            reactions = ['👍', '📡', '⏯️', '🔎', '👎', '❌']
             for reaction in reactions:
                 await options_message.add_reaction(reaction)
             
@@ -258,7 +249,7 @@ class client:
                 await options_message.add_reaction(reactions[i])
             await options_message.add_reaction(reactions[-1])
         
-        @self.bot.command(help = 'Searches random radio')
+        @self.bot.command(help = 'Searches random radio (📡)')
         async def tuner(ctx, *args):
             mediator_index = self.check_playlist(ctx.channel.id)
             await self.mediators["mediators"][mediator_index].tuner(ctx)
@@ -282,7 +273,7 @@ class client:
                 for reaction in message.reactions:
                     reactions += [reaction.emoji]
                     
-                if len(reactions) > 0 and '📻' in reactions:
+                if len(reactions) > 0 and ('📻' in reactions or '📡' in reactions):
                     await message.delete()
 
     def check_playlist(self, channel_id):
