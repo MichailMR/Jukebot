@@ -98,7 +98,7 @@ class client:
         async def on_raw_reaction_add(payload):
             channel_id, member_id = payload.channel_id, payload.member.id
             if channel_id == self.pending_options["channel"] and not member_id == self.bot.user.id:
-                    #Need to add that it ist possible with non options message and remove reactions.remove()
+                    #Need to add 
                     
                 ###Getting correct options
                     #ctx is only used for self.playlist (want to remove)
