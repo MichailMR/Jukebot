@@ -4,11 +4,12 @@ To use the bot create a bot and generate a token at https://discord.com/develope
 
 Prefix: ?
 
-Commands:
-- help
-- radio / r
-- search / s [search query]
-- tuner / t
-- streamurl [url]
-- like WIP
-- dislike WIP
+​Commands:
+  clean     Removes earlier option messages [number of messages to check]
+  help      Shows this message
+  pause     Pauses or resumes song
+  ping      Returns a message saying "pong"
+  radio     Opens the radio widget (📻)
+  search    Request a radio to listen to (🔎) [search query]
+  streamurl Plays audio stream from url [url]
+  tuner     Searches random radio (📡)
