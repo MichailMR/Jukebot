@@ -4,7 +4,7 @@ To use the bot create a bot and generate a token at https://discord.com/develope
 
 Prefix: ?
 
-​Commands: 
+Commands: 
  - clean     Removes earlier option messages [number of messages to check]
  - help      Shows this message
  - pause     Pauses or resumes song
