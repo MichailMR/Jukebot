@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 class radio_soup:
     def get_stream(input):
         ###Opens html file from https://www.hendrikjansen.nl/henk/streaming.html with some known radio streaming urls
-        with open('.\\radio_zenders.hmtl') as fp:
+        with open('..\\radio_zenders.hmtl') as fp:
             soup = BeautifulSoup(fp, 'html.parser')
     
         ###Searches all mentions of the given input       

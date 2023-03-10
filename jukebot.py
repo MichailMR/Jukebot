@@ -2,7 +2,7 @@ import asyncio
 import json
 import random
 
-token = json.load(open('key.json'))["key"]
+token = json.load(open('../key.json'))["key"]
 
 from modules.radio_soup import radio_soup
 
@@ -86,7 +86,9 @@ class client:
         self.pending_options = {"type":[],"channel":[],"options":[],"ctx":[],"message":[]}
 
         ###bot stuff
-        self.bot = commands.Bot(command_prefix = '?', Intents=discord.Intents.all())
+        help_command = commands.DefaultHelpCommand(no_category = 'Commands')
+        
+        self.bot = commands.Bot(command_prefix = '?', Intents=discord.Intents.all(), help_command=help_command)
         
             #need to find event to register when bot is actually connected to vc
         
@@ -149,31 +151,22 @@ class client:
 
         ###create commands
         ###test ping
-        @self.bot.command(help = 'Returns a message saying "pong"')
+        @self.bot.command(help = 'Returns a message saying "pong"', cog='extras')
         async def ping(ctx):
             await ctx.send('pong')
         
         ###Pause or resume songs
-        @self.bot.command(help = 'Pauses or resumes song')
+        @self.bot.command(help = 'Pauses or resumes song', aliases=['resume', 'p'], cog='radio control')
         async def pause(ctx):
             mediator_index = self.check_mediator(ctx.channel.id)
                 #transfer to class 2
             if self.mediators["mediators"][mediator_index].jukebox["box"].is_playing():
                 await self.mediators["mediators"][mediator_index].pause_resume()
             else:
-                await self.mediators["mediators"][mediator_index].pause_resume()
-
-        @self.bot.command(help = 'Pauses or resumes song')
-        async def resume(ctx):
-            mediator_index = self.check_mediator(ctx.channel.id)
-                #transfer to class 2
-            if self.mediators["mediators"][mediator_index].jukebox["box"].is_playing():
-                await self.mediators["mediators"][mediator_index].pause_resume()
-            else:
-                await self.mediators["mediators"][mediator_index].pause_resume()                 
+                await self.mediators["mediators"][mediator_index].pause_resume()                
         
         ###Open radio widget (inbed with reaction options)
-        @self.bot.command(help = 'Opens the radio widget (📻)')
+        @self.bot.command(help = 'Opens the radio widget (📻)', aliases=['r'])
         async def radio(ctx):
             ###Get mediator
             channel_id = ctx.channel.id
@@ -200,7 +193,7 @@ class client:
             
         
         ###request a song to be played
-        @self.bot.command(help = 'Request a radio to listen to (🔎) [search query]')
+        @self.bot.command(help = 'Request a radio to listen to (🔎) [search query]', aliases=['s'])
         async def search(ctx, *args):
             if ctx.author == self.bot.user:
                 return
@@ -254,7 +247,7 @@ class client:
                 await options_message.add_reaction(reactions[i])
             await options_message.add_reaction(reactions[-1])
         
-        @self.bot.command(help = 'Searches random radio (📡)')
+        @self.bot.command(help = 'Searches random radio (📡)', aliases=['t'])
         async def tuner(ctx, *args):
             channel_id = ctx.channel.id
             mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
@@ -273,7 +266,7 @@ class client:
                 await mediator.request(input, 'user input', ctx)
                 await self.sync_radio_text(channel_id)
         
-        @self.bot.command(help = 'Removes earlier option messages [number of messages to check]')
+        @self.bot.command(help = 'Removes earlier option messages [number of messages to check]', aliases=['c'])
         async def clean(ctx, *args):
             limit = 100
         
@@ -287,26 +280,6 @@ class client:
                     
                 if len(reactions) > 0 and ('📻' in reactions or '📡' in reactions):
                     await message.delete()
-        
-        @self.bot.command()
-        async def r(ctx):
-            await ctx.invoke(self.bot.get_command('radio'))
-            
-        @self.bot.command()
-        async def s(ctx, *args):
-            await ctx.invoke(self.bot.get_command('search'), args[0])
-            
-        @self.bot.command()
-        async def p(ctx):
-            await ctx.invoke(self.bot.get_command('pause'))
-            
-        @self.bot.command()
-        async def t(ctx):
-            await ctx.invoke(self.bot.get_command('tuner'))
-
-        @self.bot.command()
-        async def c(ctx):
-            await ctx.invoke(self.bot.get_command('clean'))
 
     def check_mediator(self, channel_id):
         ###Create playlist and retrieve id index
