@@ -1,6 +1,6 @@
 # Jukebot
 A discord bot that plays live radio from audio streams.
-To use the bot create: 
+To use the bot create:
 - Create a json file named dict.json in the library level under jukebot. 
 - Generate a token at https://discord.com/developers/ and put it at "token". 
 
