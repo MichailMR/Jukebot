@@ -319,7 +319,7 @@ class client:
                 dict = json.loads(dict_file.read())
                 author_id_str = str(ctx.author.id)
                 
-                description = ''.join([str(i+1)+'. '+like["radio_name"]+'\n' for i, like in enumerate(dict["likes"][author_id_str])])
+                description = ''.join([str(i)+'. '+like["radio_name"]+'\n' for i, like in enumerate(dict["likes"][author_id_str])])
                 
                 await ctx.send(embed=discord.Embed(description=description, color=0xaa8800))
                     #Need to add pending option
