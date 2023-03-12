@@ -320,7 +320,7 @@ class client:
                             dict["likes"][author_id_str] = [{"play_url":jukebox["play_url"], "radio_name":jukebox["radio_name"]}]
                     await ctx.send('liked 👍')
                 else:
-                    await ctx.send('max. 5 liked radio\'s')
+                    await ctx.send('max 5 liked radio\'s')
                 
                 ###Overwrite the file
                 dict_file.seek(0)
