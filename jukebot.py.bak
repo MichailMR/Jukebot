@@ -114,9 +114,13 @@ class client:
                 
                 ###options that make user able to select title
                 if self.pending_options["type"] == 'search':
+                    ###return to radio widget
+                    if reaction == '📻':
+                        await ctx.invoke(self.bot.get_command('radio'))
+                        return
+            
                     ###choosing a title
                     reactions = ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣']
-                    
                     option_index = reactions.index(reaction)
                     input = self.pending_options["options"][option_index]
                     
@@ -162,7 +166,7 @@ class client:
             mediator.pause()
         
         ###Open radio widget (inbed with reaction options)
-        @self.bot.command(help = '(ra / reload) Opens the radio widget', aliases=['ra', 'reload'])
+        @self.bot.command(help = '(📻, ra / reload) Opens the radio widget', aliases=['ra', 'reload'])
         async def radio(ctx):
             ###clean earlier embedded messages
             await ctx.invoke(self.bot.get_command('clean'))
@@ -254,6 +258,7 @@ class client:
             
             for i in range(len(urls)):
                 await options_message.add_reaction(reactions[i])
+            await options_message.add_reaction('📻')
         
         @self.bot.command(help = '(📡 / tu) Searches random radio', aliases=['tu'])
         async def tuner(ctx, *args):
@@ -373,13 +378,10 @@ class client:
                 reactions = ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣']
                 for i in range(len(play_urls)):
                     await options_message.add_reaction(reactions[i])
+                await options_message.add_reaction('📻')
 
     def check_mediator(self, channel_id):
         ###Create mediator object if it does not exist yet
-        print()
-        if not channel_id in self.mediators["channels"] and self.connected:
-            return None
-
         if not channel_id in self.mediators["channels"]:
             self.mediators["channels"] += [channel_id]
             self.mediators["mediators"] += [mediator(channel_id)]
