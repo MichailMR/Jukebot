@@ -34,7 +34,7 @@ class radio_soup:
             for segment in radio_name.split(' '):
                 if segment == 'â€”':
                     radio_name = ' '.join(radio_name.split(' ')[1:])
-            radio_name = radio_name.replace('\n', '').replace('—', '').lower().strip()
+            radio_name = radio_name.replace('\n', '').replace('—', '').lower()
         
             ###only add if it is an usefull audio file stream
             if '.mp3' in url or '.aac' in url or '.m3u8' in url:

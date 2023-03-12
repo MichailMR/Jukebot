@@ -82,17 +82,22 @@ class client:
         ###class vars
         self.mediators = {"mediators":[],"channels":[]}
         self.pending_options = {"type":[],"channel":[],"options":[],"ctx":[],"message":[]}
+        
+        self.connected = False
 
         ###bot stuff
         help_command = commands.DefaultHelpCommand(no_category = 'Commands')
         
         self.bot = commands.Bot(command_prefix = '?', Intents=discord.Intents.all(), help_command=help_command)
         
-            #need to find event to register when bot is actually connected to vc
-        
         @self.bot.event
         async def on_ready():
             print('Rubiris is ready!')
+            
+        @self.bot.event
+        async def on_voice_state_update(member, before, after):
+            if member.id == self.bot.user.id and (before.channel == None or after.channel == None):
+                self.connected = not self.connected
         
         @self.bot.event
         async def on_raw_reaction_add(payload):
@@ -117,7 +122,7 @@ class client:
                     
                     ###requesting the radio
                     mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
-                    await mediator.request(input["url"], input["radio_name"], ctx) 
+                    await mediator.request(input["play_url"], input["radio_name"], ctx) 
                     await ctx.invoke(self.bot.get_command('radio'))
                     
                 if self.pending_options["type"] == 'radio':      
@@ -127,6 +132,8 @@ class client:
                         await ctx.invoke(self.bot.get_command('pause'))
                     elif reaction == '📡':
                         await ctx.invoke(self.bot.get_command('tuner'))
+                    elif reaction == '📒':
+                        await ctx.invoke(self.bot.get_command('likes'))
                     elif reaction == '👍':
                         await ctx.invoke(self.bot.get_command('like'))
                     elif reaction == '👎':
@@ -149,6 +156,7 @@ class client:
         ###Pause or resume songs
         @self.bot.command(help = '(⏯️ / pa / resume) Pauses or resumes song', aliases=['resume', 'pa'])
         async def pause(ctx):
+            #Get mediator and invoke pause
             channel_id = ctx.channel.id
             mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
             mediator.pause()
@@ -163,7 +171,23 @@ class client:
             channel_id = ctx.channel.id
             mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
             
-            ###Neat description
+            ###Open data json data base file as a dictionary 
+            with open('../dict.json', 'r', encoding = 'utf8') as dict_file:
+                ###retrieve data
+                dict = json.loads(dict_file.read())
+                author_id_str = str(ctx.author.id)
+                
+                likes = dict["likes"][author_id_str]
+                
+                ###Close file
+                dict_file.close()
+            
+            ###Directly begin playing a liked radio when silent
+            if len(likes) > 0 and mediator.jukebox["box"] == None or not mediator.jukebox["box"].is_playing():
+                liked_radio = random.choice(likes)
+                await mediator.request(liked_radio["play_url"], liked_radio["radio_name"], ctx) 
+            
+            ###Neat description to show to the user
             radio_name = mediator.jukebox["radio_name"]
             if radio_name == None:
                 description = f'— Now playing nothing —'
@@ -177,7 +201,7 @@ class client:
             await self.add_pending_options({"channel":ctx.channel.id, "type":'radio', "options":options, "ctx":ctx, "message":options_message}, ctx.channel.id)
             
             ###add all reaction options
-            reactions = ['🔎', '⏯️', '📡', '👍', '👎', '❌']
+            reactions = ['🔎', '⏯️', '📡', '📒', '👍', '👎', '❌']
             for reaction in reactions:
                 await options_message.add_reaction(reaction)
             
@@ -196,12 +220,7 @@ class client:
             channel_id = ctx.channel.id
             mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
             
-                #WIP
-            if not mediator.jukebox["box"] == None and mediator.jukebox["box"].is_playing() and not channel_id in self.mediators["channels"]:
-                await ctx.send('Please write commands in the correct text channel')
-                return
-            
-            #If there isn't a search query ask for it
+            ###If there isn't a search query ask for it
             if len(args) == 0:
                 await ctx.send('search a radio 🔎')
                 
@@ -222,7 +241,7 @@ class client:
             
             ###Select five results to add to options [optimised with zip]
             for url, radio_name, i in zip(results["urls"], results["radio_names"], range(5)):
-                urls += [{"url":url, "radio_name":radio_name}]
+                urls += [{"play_url":url, "radio_name":radio_name}]
                 description += f'{str(i+1)}. {radio_name}\n'
             
             ###ask question with embed and emoji reactions
@@ -238,15 +257,19 @@ class client:
         
         @self.bot.command(help = '(📡 / tu) Searches random radio', aliases=['tu'])
         async def tuner(ctx, *args):
+            ###Get mediator
             channel_id = ctx.channel.id
             mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
             
+            ###Get random radio
             await mediator.tuner(ctx)
             
-            await self.sync_radio_text(channel_id)
+            ###Open / update radio widget
+            await ctx.invoke(self.bot.get_command('radio'))
             
         @self.bot.command(help = 'Plays audio stream from url [url]')
         async def streamurl(ctx, *args):
+            ###Allow users to play stream urls of their own finding
             if len(args) > 0:
                 input = ' '.join(args)
                 channel_id = ctx.channel.id
@@ -255,13 +278,16 @@ class client:
                 await mediator.request(input, 'user input', ctx)
                 await self.sync_radio_text(channel_id)
         
-        @self.bot.command(help = '(cl) Removes earlier option messages [number of messages to check]', aliases=['cl'])
+        @self.bot.command(help = '(cl) Removes send option messages [amout of messages]', aliases=['cl'])
         async def clean(ctx, *args):
+            ###maintanance command
             limit = 10
-        
+            
+            ###Check for user argument
             if len(args) > 0 and type(args[0]) == int:
                 limit = args[0]
             
+            ###Removes all pending option messages
             async for message in ctx.channel.history(limit=limit):
                 reactions = []
                 for reaction in message.reactions:
@@ -272,18 +298,26 @@ class client:
         
         @self.bot.command(help = '(👍 / li) Liked radio play when using the radio widget', aliases=['li'])
         async def like(ctx):
+            ###Open data json data base file as a dictionary 
             with open('../dict.json', 'r+', encoding = 'utf8') as dict_file:
+                ###retrieve data
                 dict = json.loads(dict_file.read())
                 author_id_str, channel_id = str(ctx.author.id), ctx.channel.id
                 mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
                 
+                ###Check if radio can be liked and add it to personal likes
                 jukebox = mediator.jukebox
-                if not jukebox["play_url"] in [like["play_url"] for like in dict["likes"][author_id_str]]:
+                if not jukebox["play_url"] == None and not jukebox["play_url"] in [like["play_url"] for like in dict["likes"][author_id_str]]:
                     if author_id_str in list(dict["likes"]):
                         dict["likes"][author_id_str] += [{"play_url":jukebox["play_url"], "radio_name":jukebox["radio_name"]}]
+                        
+                        ###max five liked radio's is enough
+                        if len(dict["likes"][author_id_str]) > 5:
+                            dict["likes"].pop(0)
                     else:
                         dict["likes"][author_id_str] = [{"play_url":jukebox["play_url"], "radio_name":jukebox["radio_name"]}]
-                    
+                
+                ###Overwrite the file
                 dict_file.seek(0)
                 dict_file.write(json.dumps(dict))    
 
@@ -294,17 +328,21 @@ class client:
         
         @self.bot.command(help = '(👎 / dl) Removes the radio from likes', aliases=['dl'])
         async def dislike(ctx):
+            ###Open data json data base file as a dictionary 
             with open('../dict.json', 'r+', encoding = 'utf8') as dict_file:
+                ###retrieve data
                 dict = json.loads(dict_file.read())
                 author_id_str, channel_id = str(ctx.author.id), ctx.channel.id
                 mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
                 
+                ###check if radio can be disliked and dislike
                 if author_id_str in list(dict["likes"]):
                     index = [index for index, like in enumerate(dict["likes"][author_id_str]) if like["play_url"] == mediator.jukebox["play_url"]]
                     if len(index) > 0:
                         index = index[0]
                         dict["likes"][author_id_str].pop(index)
                 
+                ###Overwrite file
                 dict_file.seek(0)
                 dict_file.write(json.dumps(dict))    
 
@@ -313,47 +351,48 @@ class client:
                     
             await ctx.send('disliked 👎')
         
-        @self.bot.command(help = '(ls) Lets you choose from your liked radio\'s', aliases=['ls'])
+        @self.bot.command(help = '(📒 / ls) Lets you choose from your liked radio\'s', aliases=['ls'])
         async def likes(ctx):
-            with open('../dict.json', 'r+', encoding = 'utf8') as dict_file:
+            ###Open data json data base file as a dictionary
+            with open('../dict.json', 'r', encoding = 'utf8') as dict_file:
                 dict = json.loads(dict_file.read())
                 author_id_str = str(ctx.author.id)
+                likes = dict["likes"][author_id_str]
                 
-                description = ''.join([str(i)+'. '+like["radio_name"]+'\n' for i, like in enumerate(dict["likes"][author_id_str])])
+                    #useless
+                play_urls = [like["play_url"] for like in likes]
                 
-                await ctx.send(embed=discord.Embed(description=description, color=0xaa8800))
-                    #Need to add pending option
+                ###write a user friendly options message
+                description = ''.join([str(i+1)+'. '+like["radio_name"]+'\n' for i, like in enumerate(likes)])
+                options_message = await ctx.send(embed=discord.Embed(description=description, color=0xaa8800))
+                
+                ###overwrite pending option to class
+                await self.add_pending_options({"channel":ctx.channel.id, "type":'search', "options":likes, "ctx":ctx, "message":options_message},ctx.channel.id)
+            
+                ###add all reaction options
+                reactions = ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣']
+                for i in range(len(play_urls)):
+                    await options_message.add_reaction(reactions[i])
 
     def check_mediator(self, channel_id):
-        ###Create playlist and retrieve id index
+        ###Create mediator object if it does not exist yet
+        print()
+        if not channel_id in self.mediators["channels"] and self.connected:
+            return None
+
         if not channel_id in self.mediators["channels"]:
             self.mediators["channels"] += [channel_id]
             self.mediators["mediators"] += [mediator(channel_id)]
         
+        ###return index
         return self.mediators["channels"].index(channel_id)
-        
-    async def sync_radio_text(self, channel_id):
-        if not self.pending_options["type"] == 'radio':
-            return
-    
-        mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
-        radio_name = mediator.jukebox["radio_name"]
-        
-        if radio_name == None:
-            description = f'— Now playing nothing —'
-        else:
-            description = f'🎶 Now playing: {radio_name} 🎶'
-            
-        embed=discord.Embed(description=description, color=0xaa8800)
-        
-        await self.pending_options["message"].edit(embed=embed)
     
     async def add_pending_options(self, options_object, message_id):
         if not message_id == self.pending_options["channel"]:
             ###new options message
             self.pending_options = options_object
         else:            
-            ###delete previous options message
+            ###delete previous options message if it exsists (no bugs so far)
             try:
                 await self.pending_options["message"].delete()
             except:
@@ -371,19 +410,22 @@ class client:
         await self.bot.close()
 
 ###creates and runs a client
-with open('../dict.json') as dict_file:
-    token = json.load(dict_file)["token"] 
-    client = client()
-    client.run(token)
+with open('../dict.json', 'r', encoding='utf8') as dict_file:
+    ###read token
+    token = json.load(dict_file)["token"]
+    
+    ###close file
+    dict_file.close()
+    
+###start bot
+client = client()
+client.run(token)
 
 """
 Known bugs:
+"OSError: [WinError 10038] An operation was attempted on something that is not a socket"
 """
 
 """
 To-be-added features:
--Every command needs to specify number of arguments
--Like and dislikes when tuning
--Add radio widget (to easily tune next item) (with new reaction option to open radio)
--Add disconnect
 """
