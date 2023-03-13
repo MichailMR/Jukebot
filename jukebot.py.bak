@@ -181,6 +181,9 @@ class client:
                 dict = json.loads(dict_file.read())
                 author_id_str = str(ctx.author.id)
                 
+                if not author_id_str in list(dict["likes"]):
+                    dict["likes"][author_id_str] = ""
+                
                 likes = dict["likes"][author_id_str]
                 
                 ###Close file
@@ -320,7 +323,7 @@ class client:
                             dict["likes"][author_id_str] = [{"play_url":jukebox["play_url"], "radio_name":jukebox["radio_name"]}]
                     await ctx.send('liked 👍')
                 else:
-                    await ctx.send('max 5 liked radio\'s')
+                    await ctx.send('max. 5 liked radio\'s')
                 
                 ###Overwrite the file
                 dict_file.seek(0)

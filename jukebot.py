@@ -181,6 +181,9 @@ class client:
                 dict = json.loads(dict_file.read())
                 author_id_str = str(ctx.author.id)
                 
+                if not author_id_str in list(dict["likes"]):
+                    dict["likes"][author_id_str] = []
+                
                 likes = dict["likes"][author_id_str]
                 
                 ###Close file
