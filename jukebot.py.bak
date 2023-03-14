@@ -168,6 +168,11 @@ class client:
         ###Open radio widget (inbed with reaction options)
         @self.bot.command(help = '(📻 / ra / reload) Opens the radio widget', aliases=['ra', 'reload'])
         async def radio(ctx):
+            ###Check if author is in voice channel to gain control
+            if ctx.author.voice == None:
+                    await ctx.send('You are not connected to a voice channel')
+                    return
+        
             ###clean earlier embedded messages
             await ctx.invoke(self.bot.get_command('clean'))
             
@@ -182,7 +187,7 @@ class client:
                 author_id_str = str(ctx.author.id)
                 
                 if not author_id_str in list(dict["likes"]):
-                    dict["likes"][author_id_str] = ""
+                    dict["likes"][author_id_str] = []
                 
                 likes = dict["likes"][author_id_str]
                 
@@ -268,6 +273,11 @@ class client:
             ###Get mediator
             channel_id = ctx.channel.id
             mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
+            
+            ###Check if author is in voice channel to gain control
+            if ctx.author.voice == None:
+                    await ctx.send('You are not connected to a voice channel')
+                    return
             
             ###Get random radio
             await mediator.tuner(ctx)
