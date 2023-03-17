@@ -270,14 +270,14 @@ class client:
         
         @self.bot.command(help = '(📡 / tu) Searches random radio', aliases=['tu'])
         async def tuner(ctx, *args):
-            ###Get mediator
-            channel_id = ctx.channel.id
-            mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
-            
             ###Check if author is in voice channel to gain control
             if ctx.author.voice == None:
                     await ctx.send('You are not connected to a voice channel')
                     return
+        
+            ###Get mediator
+            channel_id = ctx.channel.id
+            mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
             
             ###Get random radio
             await mediator.tuner(ctx)
@@ -373,6 +373,10 @@ class client:
             with open('../dict.json', 'r', encoding = 'utf8') as dict_file:
                 dict = json.loads(dict_file.read())
                 author_id_str = str(ctx.author.id)
+                
+                if not author_id_str in dict["likes"].keys():
+                    
+                
                 likes = dict["likes"][author_id_str]
                 
                     #useless

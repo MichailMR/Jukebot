@@ -373,6 +373,10 @@ class client:
             with open('../dict.json', 'r', encoding = 'utf8') as dict_file:
                 dict = json.loads(dict_file.read())
                 author_id_str = str(ctx.author.id)
+                
+                if not author_id_str in dict["likes"].keys():
+                    dict["likes"][author_id_str] = []
+                
                 likes = dict["likes"][author_id_str]
                 
                     #useless
