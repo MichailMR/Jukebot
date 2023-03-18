@@ -195,7 +195,7 @@ class client:
                 dict_file.close()
             
             ###Directly begin playing a liked radio when silent
-            if len(likes) > 0 and mediator.jukebox["box"] == None or not mediator.jukebox["box"].is_playing():
+            if len(likes) > 0 and (True if mediator.jukebox["box"] == None else not mediator.jukebox["box"].is_playing()):
                 liked_radio = random.choice(likes)
                 await mediator.request(liked_radio["play_url"], liked_radio["radio_name"], ctx) 
             
@@ -231,7 +231,7 @@ class client:
             
             channel_id = ctx.channel.id
             mediator = self.mediators["mediators"][self.check_mediator(channel_id)]
-            
+
             ###If there isn't a search query ask for it
             if len(args) == 0:
                 await ctx.send('search a radio 🔎')
@@ -240,7 +240,11 @@ class client:
                     return m.channel.id == channel_id
                 input = (await self.bot.wait_for("message", check=is_channel)).content
             else:
-                input = ' '.join(args) 
+                input = ' '.join(args)
+                
+            if input[0] == '?':
+                ctx.send('Please do not use commands as a search query')
+                return
             
             #Find radio urls using radio_soup
             results = radio_soup.get_stream(input)
@@ -383,7 +387,11 @@ class client:
                 play_urls = [like["play_url"] for like in likes]
                 
                 ###write a user friendly options message
-                description = ''.join([str(i+1)+'. '+like["radio_name"]+'\n' for i, like in enumerate(likes)])
+                if len(likes) > 0:
+                    description = ''.join([str(i+1)+'. '+like["radio_name"]+'\n' for i, like in enumerate(likes)])
+                else:
+                    description = 'Like a radio using the ?likes command or 👍'
+                    
                 options_message = await ctx.send(embed=discord.Embed(description=description, color=0xaa8800))
                 
                 ###overwrite pending option to class
